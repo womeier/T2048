@@ -177,7 +177,7 @@ Definition b2s n m l :=
 
 (* Possible result after a game *)
 Inductive result := 
-  iresult (*invalid *) | lresult (* lost *) |  wresult (* win *) |
+  iresult (*invalid *) | lresult (* lost *) |  wresult (_ : list (list N)) (* win *) |
   vresult (_ : N) (_ : list (list N)) (* valid *).
 
 (* Compute the next board *)
@@ -185,7 +185,7 @@ Definition next_board n s gl v m b :=
     let b1 := make_move n m b in
     if eq_board b b1 then iresult
     else 
-      if is_won v b1 then wresult else
+      if is_won v b1 then wresult b1 else
       let z := zeros b1 in
       if z =? 0 then lresult else
       match add_val s gl b1 with
@@ -201,7 +201,7 @@ Fixpoint games n d s gl v ms b st :=
     match nb with
     | iresult => Invalid_Move
     | lresult => Lost 
-    | wresult => Won ms1
+    | wresult _ => Won ms1
     | vresult s1 b1 =>
           games n d s1 gl v ms1 b1 (b2s d n b1)
     end
@@ -214,7 +214,7 @@ games n d s gl v (m :: ms1) b st =
     match nb with
     | iresult => Invalid_Move
     | lresult => Lost 
-    | wresult => Won ms1
+    | wresult _ => Won ms1
     | vresult s1 b1 =>
           games n d s1 gl v ms1 b1 (b2s d n b1)
     end.
@@ -263,8 +263,8 @@ Proof.
 intros H; simpl; rewrite H; auto.
 Qed.
 
-Lemma gamesE3 n d s gl v m ms1 b st :
-  next_board n s gl v m b = wresult ->
+Lemma gamesE3 b1 n d s gl v m ms1 b st :
+  next_board n s gl v m b = wresult b1 ->
   games n d s gl v (m :: ms1) b st = Won ms1.
 Proof.
 intros H; simpl; rewrite H; auto.
@@ -285,7 +285,7 @@ match goal with
     (match v with
     | iresult => rewrite gamesE1; [idtac | vm_compute; apply refl_equal]
     | lresult => rewrite gamesE2; [idtac | vm_compute; apply refl_equal]
-    | wresult => rewrite gamesE3; [idtac | vm_compute; apply refl_equal]
+    | wresult ?b1 => rewrite (gamesE3 b1); [idtac | vm_compute; apply refl_equal]
     | vresult ?s1 ?b1 => apply (gamesE4 s1 b1); [vm_compute; apply refl_equal | idtac]
 end ) end.
 
